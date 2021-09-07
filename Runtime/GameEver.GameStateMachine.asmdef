@@ -1,8 +1,8 @@
 {
-    "name": "com.Ishimine.GameStateMachine",
+    "name": "GameEver.GameStateMachine",
     "rootNamespace": "",
     "references": [
-        "GUID:0653f5627b2600a4eb22a89911ae7632"
+        "GUID:f54154b5f349a344b81e77d19b75c2e5"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
