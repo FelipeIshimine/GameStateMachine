@@ -2,7 +2,7 @@
     "name": "GameEver.GameStateMachine",
     "rootNamespace": "",
     "references": [
-        "GUID:f54154b5f349a344b81e77d19b75c2e5"
+        "GUID:260cde92bc1d2b243bb38045b2f5809f"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
