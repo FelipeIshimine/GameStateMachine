@@ -20,23 +20,21 @@ namespace GameStateMachineCore
         private BaseGameState _currentState;
         public IState CurrentState => _currentState;
 
-        private static GameStateProxy proxy;
-        protected static GameStateProxy Proxy
+        private GameStateProxy _proxy;
+        protected GameStateProxy Proxy
         {
             get
             {
-                if (!proxy)
+                if (!_proxy)
                 {
-                    proxy = new GameObject().AddComponent<GameStateProxy>();
-                    proxy.name = $"{typeof(T).Name} Proxy";
-                    proxy.Initialize(Instance);
+                    _proxy = new GameObject().AddComponent<GameStateProxy>();
+                    _proxy.name = $"{typeof(T).Name} Proxy";
+                    _proxy.Initialize(Instance);
                 }
-                return proxy;
+                return _proxy;
             }
         }
         
-        //private static readonly List<IUse<T>> Listeners = new List<IUse<T>>();
-
         public override void Exit()
         {
 
@@ -46,10 +44,9 @@ namespace GameStateMachineCore
              Instance = null;
              
              OnPreExit?.Invoke();
-             GameStatesManager.Pop();
+             GameStatesManager.Pop(Root);
              _currentState?.Exit();
              OnPostExit?.Invoke();
-             //Listeners.ForEach(x=> x.GameState = null);
              
              //Debug.Log($"|EXIT| <Color=brown>  {this} </color>");
         }
@@ -61,7 +58,9 @@ namespace GameStateMachineCore
 
             OnPreEnter?.Invoke();
             Instance = this as T;
-            GameStatesManager.Push(this);
+            
+            GameStatesManager.Push(Root,this);
+            
             OnPostEnter?.Invoke();
         }
 
@@ -73,7 +72,11 @@ namespace GameStateMachineCore
                 _currentState?.Exit();
             
             _currentState = nState;
-            _currentState?.Enter();
+            if (_currentState != null)
+            {
+                _currentState.Root = Root;
+                _currentState.Enter();
+            }
         }
 
         public override void ExitSubState()
@@ -82,11 +85,13 @@ namespace GameStateMachineCore
             _currentState.Exit();
             _currentState = null;
         }
-
     }
 
     public abstract class BaseGameState : IState
     {
+        private BaseGameState _root;
+        public BaseGameState Root { get => _root ?? this; set => _root = value; }
+
         public static Action<float> OnInstantiationProgress;
         public abstract void Enter();
         public abstract void Exit();

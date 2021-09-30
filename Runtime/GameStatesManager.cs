@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using GameStateMachineCore;
 using Sirenix.OdinInspector;
 using Sirenix.Serialization;
@@ -12,39 +13,45 @@ using UnityEngine;
 public class GameStatesManager : RuntimeScriptableSingleton<GameStatesManager>
 {
 #if UNITY_EDITOR
-        [MenuItem("GameStateMachine/PrintUpperState")]
-        public static void PrintUpperState() => Debug.Log(UpperState);
-        [MenuItem("GameStateMachine/PrintStateChain")]
-        public static void PrintStateChain()
+    [MenuItem("GameStateMachine/PrintUpperState")]
+    public static void PrintUpperState()
+    {
+        foreach (KeyValuePair<BaseGameState,Stack<BaseGameState>> pair in ActiveStateMachines)
+            Debug.Log($"{pair.Key}:{pair.Value.Peek()}");
+    }
+
+    [MenuItem("GameStateMachine/PrintStateChain")]
+    public static void PrintStateChain()
+    {
+        foreach (var pair in ActiveStateMachines)
         {
-            string str = string.Empty;
-            for (var index = ActiveStates.Count - 1; index >= 0; index--)
+            StringBuilder stringBuilder = new StringBuilder();
+            List<BaseGameState> states = new List<BaseGameState>(pair.Value);
+            for (var index = states.Count - 1; index >= 0; index--)
             {
-                BaseGameState baseGameState = ActiveStates[index];
-                str += $"{baseGameState}->";
+                BaseGameState baseGameState = states[index];
+                stringBuilder.Append($"{baseGameState}->");
             }
-            Debug.Log(str);
+            Debug.Log(stringBuilder);
         }
+    }
 #endif
-    public static IReadOnlyList<BaseGameState> ActiveStates => StatesStack.ToArray();
-    [ShowInInspector]  public static readonly Stack<BaseGameState> StatesStack = new Stack<BaseGameState>();
-    public static  BaseGameState UpperState => StatesStack == null || StatesStack.Count == 0?null:StatesStack.Peek();
+
+    private static readonly Dictionary<BaseGameState, Stack<BaseGameState>> ActiveStateMachines =
+        new Dictionary<BaseGameState, Stack<BaseGameState>>();
+
     public bool autoInitialize = true;
     public static bool AutoInitialize => Instance.autoInitialize;
 
-    [ShowInInspector] public static BaseGameState Current;
+    public static BaseGameState Current(BaseGameState root) => ActiveStateMachines[root].Peek();
 
-    public static void Push<T>(GameState<T> gameState) where T : GameState<T>
+    public static void Push<T>(BaseGameState root, GameState<T> gameState) where T : GameState<T>
     {
-        StatesStack.Push(gameState);
-        Current = gameState;
+        if (!ActiveStateMachines.ContainsKey(root))
+            ActiveStateMachines[root] = new Stack<BaseGameState>();
+        ActiveStateMachines[root].Push(gameState);
     }
     
-    public static BaseGameState Pop()
-    {
-        BaseGameState oldState = StatesStack.Pop();
-        Current = UpperState;
-        return oldState;
-    }
+    public static BaseGameState Pop(BaseGameState root) => ActiveStateMachines[root].Pop();
 
 }
