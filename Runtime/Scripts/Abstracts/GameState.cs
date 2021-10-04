@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEditor;
 #endif
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace GameStateMachineCore
 {
@@ -34,21 +35,23 @@ namespace GameStateMachineCore
                 return _proxy;
             }
         }
-        
+
         public override void Exit()
         {
+            if (_proxy != null)
+                Object.Destroy(_proxy.gameObject);
 
-             if (_currentState == this)
+            if (_currentState == this)
                 throw new Exception("Recursive State");
 
-             Instance = null;
-             
-             OnPreExit?.Invoke();
-             GameStatesManager.Pop(Root);
-             _currentState?.Exit();
-             OnPostExit?.Invoke();
-             
-             //Debug.Log($"|EXIT| <Color=brown>  {this} </color>");
+            Instance = null;
+
+            OnPreExit?.Invoke();
+            GameStatesManager.Pop(Root);
+            _currentState?.Exit();
+            OnPostExit?.Invoke();
+
+            //Debug.Log($"|EXIT| <Color=brown>  {this} </color>");
         }
 
         public override void Enter()
