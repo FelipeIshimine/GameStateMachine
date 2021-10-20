@@ -3,8 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using GameStateMachineCore;
-using Sirenix.OdinInspector;
-using Sirenix.Serialization;
 using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
