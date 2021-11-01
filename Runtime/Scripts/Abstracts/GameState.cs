@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -101,6 +102,23 @@ namespace GameStateMachineCore
         public abstract void SwitchState(BaseGameState nState);
 
         public abstract void ExitSubState();
+
+        /// <summary>
+        /// Not compatible with WEBGL
+        /// </summary>
+        /// <param name="duration"></param>
+        protected static async Task Wait(float duration)
+        {
+            float endTime = Time.time + duration;
+            while (Time.time < endTime)
+                await Task.Yield();
+        }
+        /// <summary>
+        /// Not compatible with WEBGL
+        /// </summary>
+        /// <param name="duration"></param>
+        protected static async Task WaitRealtime(float duration) => await Task.Delay((int)(duration * 1000));
+
     }
 
 }
