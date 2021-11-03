@@ -107,7 +107,7 @@ namespace GameStateMachineCore
         /// Not compatible with WEBGL
         /// </summary>
         /// <param name="duration"></param>
-        protected static async Task Wait(float duration)
+        protected static async Task WaitAsync(float duration)
         {
             float endTime = Time.time + duration;
             while (Time.time < endTime)
@@ -117,7 +117,7 @@ namespace GameStateMachineCore
         /// Not compatible with WEBGL
         /// </summary>
         /// <param name="duration"></param>
-        protected static async Task WaitRealtime(float duration) => await Task.Delay((int)(duration * 1000));
+        protected static async Task WaitRealtimeAsync(float duration) => await Task.Delay((int)(duration * 1000));
 
     }
 
