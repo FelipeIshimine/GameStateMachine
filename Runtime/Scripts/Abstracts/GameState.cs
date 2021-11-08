@@ -20,7 +20,7 @@ namespace GameStateMachineCore
         public static event Action OnPostExit;
         
         private BaseGameState _currentState;
-        public IState CurrentState => _currentState;
+        public BaseGameState CurrentState => _currentState;
 
         private GameStateProxy _proxy;
         protected GameStateProxy Proxy
@@ -35,8 +35,24 @@ namespace GameStateMachineCore
             }
         }
 
-        public override void Exit()
+        public override void BaseEnter()
         {
+            OnPreEnter?.Invoke();
+            
+            if (_currentState == this)
+                throw new Exception("Recursive State");
+
+            Instance = this as T;
+            GameStatesManager.Push(Root,this);
+            
+            Enter();
+            OnPostEnter?.Invoke();
+        }
+
+        public override void BaseExit()
+        {
+            OnPreExit?.Invoke();
+            
             if (_proxy != null)
                 Object.Destroy(_proxy.gameObject);
 
@@ -44,58 +60,47 @@ namespace GameStateMachineCore
                 throw new Exception("Recursive State");
 
             Instance = null;
-
             GameStatesManager.Pop(Root);
-            _currentState?.Exit();
-
-            //Debug.Log($"|EXIT| <Color=brown>  {this} </color>");
+            _currentState?.BaseExit();
+            
+            Exit();
+            OnPostExit?.Invoke();
         }
 
-        public override void Enter()
-        {
-            if (_currentState == this)
-                throw new Exception("Recursive State");
 
-            Instance = this as T;
-            GameStatesManager.Push(Root,this);
-        }
+        protected abstract void Enter();
+        protected abstract void Exit();
 
         public override void SwitchState(BaseGameState nState)
         {
             //Debug.Log($"> <color=teal> {this.GetType().FullName}: </color>");
             Debug.Log($"> <color=teal> { this.GetType().FullName }: </color> <Color=brown> {_currentState?.GetType().Name} </color> => <Color=green> {nState.GetType().Name} </color>");
             if (_currentState != this)
-            {
-                OnPreExit?.Invoke();
-                _currentState?.Exit();
-                OnPostExit?.Invoke();
-            }
+                _currentState?.BaseExit();
             
             _currentState = nState;
             if (_currentState == null) return;
             
-            OnPreEnter?.Invoke();
             _currentState.Root = Root;
-            _currentState.Enter();
-            OnPostEnter?.Invoke();
+            _currentState.BaseEnter();
         }
 
         public override void ExitSubState()
         {
             Debug.Log($"ExitSubState: <color=red> {this} </color>");
-            _currentState.Exit();
+            _currentState.BaseExit();
             _currentState = null;
         }
     }
 
-    public abstract class BaseGameState : IState
+    public abstract class BaseGameState
     {
         private BaseGameState _root;
         public BaseGameState Root { get => _root ?? this; set => _root = value; }
-
-        public static Action<float> OnInstantiationProgress;
-        public abstract void Enter();
-        public abstract void Exit();
+        
+        public abstract void BaseEnter();
+        public abstract void BaseExit();
+        
         public abstract void SwitchState(BaseGameState nState);
 
         public abstract void ExitSubState();
