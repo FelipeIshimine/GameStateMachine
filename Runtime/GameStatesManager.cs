@@ -1,9 +1,6 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using GameStateMachineCore;
-using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 
