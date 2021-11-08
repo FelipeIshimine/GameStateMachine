@@ -27,12 +27,10 @@ namespace GameStateMachineCore
         {
             get
             {
-                if (!_proxy)
-                {
-                    _proxy = new GameObject().AddComponent<GameStateProxy>();
-                    _proxy.name = $"{typeof(T).Name} Proxy";
-                    _proxy.Initialize(Instance);
-                }
+                if (_proxy) return _proxy;
+                _proxy = new GameObject().AddComponent<GameStateProxy>();
+                _proxy.name = $"{typeof(T).Name} Proxy";
+                _proxy.Initialize(Instance);
                 return _proxy;
             }
         }
@@ -47,10 +45,8 @@ namespace GameStateMachineCore
 
             Instance = null;
 
-            OnPreExit?.Invoke();
             GameStatesManager.Pop(Root);
             _currentState?.Exit();
-            OnPostExit?.Invoke();
 
             //Debug.Log($"|EXIT| <Color=brown>  {this} </color>");
         }
@@ -60,12 +56,8 @@ namespace GameStateMachineCore
             if (_currentState == this)
                 throw new Exception("Recursive State");
 
-            OnPreEnter?.Invoke();
             Instance = this as T;
-            
             GameStatesManager.Push(Root,this);
-            
-            OnPostEnter?.Invoke();
         }
 
         public override void SwitchState(BaseGameState nState)
@@ -73,14 +65,19 @@ namespace GameStateMachineCore
             //Debug.Log($"> <color=teal> {this.GetType().FullName}: </color>");
             Debug.Log($"> <color=teal> { this.GetType().FullName }: </color> <Color=brown> {_currentState?.GetType().Name} </color> => <Color=green> {nState.GetType().Name} </color>");
             if (_currentState != this)
+            {
+                OnPreExit?.Invoke();
                 _currentState?.Exit();
+                OnPostExit?.Invoke();
+            }
             
             _currentState = nState;
-            if (_currentState != null)
-            {
-                _currentState.Root = Root;
-                _currentState.Enter();
-            }
+            if (_currentState == null) return;
+            
+            OnPreEnter?.Invoke();
+            _currentState.Root = Root;
+            _currentState.Enter();
+            OnPostEnter?.Invoke();
         }
 
         public override void ExitSubState()
