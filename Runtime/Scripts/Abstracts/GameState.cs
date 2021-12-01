@@ -87,7 +87,7 @@ namespace GameStateMachineCore
 
         public override void ExitSubState()
         {
-            Debug.Log($"ExitSubState: <color=red> {this} </color>");
+            Debug.Log($"{this} ExitSubState: <color=red> {_currentState} </color>");
             _currentState.BaseExit();
             _currentState = null;
         }
