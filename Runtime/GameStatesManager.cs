@@ -32,9 +32,11 @@ public class GameStatesManager : RuntimeScriptableSingleton<GameStatesManager>
     }
 #endif
 
-    private static readonly Dictionary<BaseGameState, Stack<BaseGameState>> ActiveStateMachines =
-        new Dictionary<BaseGameState, Stack<BaseGameState>>();
-
+    public static Dictionary<BaseGameState, Stack<BaseGameState>> ActiveStateMachines =>
+        Instance.activeStateMachines;
+       
+    private Dictionary<BaseGameState, Stack<BaseGameState>> activeStateMachines = new Dictionary<BaseGameState, Stack<BaseGameState>>();
+    public string GetStackName() => nameof(activeStateMachines);
     public bool autoInitialize = true;
     public static bool AutoInitialize => Instance.autoInitialize;
 
