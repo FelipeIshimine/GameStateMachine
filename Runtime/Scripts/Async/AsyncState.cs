@@ -17,6 +17,7 @@ public abstract class AsyncState
     private AsyncState _parent = null;
     
     private AsyncState _current;
+    protected AsyncState Current => _current;
 
     protected InnerState State;
 
