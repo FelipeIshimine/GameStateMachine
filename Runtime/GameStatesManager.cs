@@ -4,8 +4,7 @@ using GameStateMachineCore;
 using UnityEditor;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Managers/GameState")]
-public class GameStatesManager : RuntimeScriptableSingleton<GameStatesManager>
+public static class GameStatesManager
 {
 #if UNITY_EDITOR
     [MenuItem("GameStateMachine/PrintUpperState")]
@@ -32,14 +31,10 @@ public class GameStatesManager : RuntimeScriptableSingleton<GameStatesManager>
     }
 #endif
 
-    public static Dictionary<BaseGameState, Stack<BaseGameState>> ActiveStateMachines =>
-        Instance.activeStateMachines;
+    public static Dictionary<BaseGameState, Stack<BaseGameState>> ActiveStateMachines => _activeStateMachines;
        
-    private Dictionary<BaseGameState, Stack<BaseGameState>> activeStateMachines = new Dictionary<BaseGameState, Stack<BaseGameState>>();
-    public string GetStackName() => nameof(activeStateMachines);
-    public bool autoInitialize = true;
-    public static bool AutoInitialize => Instance.autoInitialize;
-
+    private static Dictionary<BaseGameState, Stack<BaseGameState>> _activeStateMachines = new Dictionary<BaseGameState, Stack<BaseGameState>>();
+    public static string GetStackName() => nameof(_activeStateMachines);
     public static BaseGameState Current(BaseGameState root) => ActiveStateMachines[root].Peek();
 
     public static void Push<T>(BaseGameState root, GameState<T> gameState) where T : GameState<T>
