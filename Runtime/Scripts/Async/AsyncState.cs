@@ -10,6 +10,7 @@ using UnityEngine.SceneManagement;
 public abstract class AsyncState
 {
     public static event Action<AsyncState> OnAnySwitchState;
+    public event Action<AsyncState,AsyncState> OnSwitchState;
     public static event Action<float> OnLoadProgress;
 
     public AsyncState Root { get; private set; } = null;
@@ -77,7 +78,8 @@ public abstract class AsyncState
     }
 
     protected async Task SwitchStateAsync(AsyncState nState)
-    {   
+    {
+        AsyncState oldState = _current;
         if (_current != null)
             Debug.Log($"<color=green>{this}</color>: <color=red>{_current}</color> => <color=white>{nState}</color>");
 
@@ -94,6 +96,7 @@ public abstract class AsyncState
         if (_current != null)
             await EnterStateAsync(_current);
 
+        OnSwitchState?.Invoke(oldState,_current);
         OnAnySwitchState?.Invoke(Root);
     }
 
