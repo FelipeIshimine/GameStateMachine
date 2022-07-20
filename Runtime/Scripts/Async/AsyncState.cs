@@ -113,15 +113,17 @@ public abstract class AsyncState
         state.State = InnerState.Active;
     }
 
-    public async void InitializeAsRootAsync()
+    public async Task InitializeAsRootAsync()
     {
         Root = this;
         await EnterStateAsync(this);
     }
     
-    public void InitializeAsRoot() => new Task(InitializeAsRootAsync).RunSynchronously();
-    
-    
+    public void InitializeAsRoot() => new Task(RootInit).RunSynchronously();
+
+    private async void RootInit() => await InitializeAsRootAsync();
+
+
     private void BaseExit()
     {
         if (_current != null)
