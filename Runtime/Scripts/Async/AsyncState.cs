@@ -61,6 +61,13 @@ public abstract class AsyncState
                 throw new ArgumentOutOfRangeException(nameof(loadSceneMode), loadSceneMode, null);
         }
     }
+    
+    protected AsyncState(AssetReference sceneReference,AssetReference[] sceneReferences) : this()
+    {
+        _singleSceneReference = sceneReference;
+        _sceneReferences = sceneReferences;
+        _sceneInstances = new SceneInstance[sceneReferences.Length];
+    }
 
     protected enum InnerState
     {
@@ -177,7 +184,7 @@ public abstract class AsyncState
         var op = Resources.UnloadUnusedAssets();
         while (!op.isDone)
             await Task.Yield();
-    */
+        */
     }
 
     private async Task UnloadAdditiveScenesAsync()
