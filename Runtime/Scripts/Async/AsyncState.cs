@@ -153,31 +153,38 @@ public abstract class AsyncState
 
     private async Task LoadScenesAsync()
     {
+        int totalProgress = 0;
+
+        if (_singleSceneReference != null) totalProgress++;
+        if (_sceneReferences != null) totalProgress += _sceneReferences.Length;
+        
+        OnLoadProgress?.Invoke(0);
         if (_singleSceneReference != null)
         {
             Debug.Log($"{this} Loading Single Scene Async");
             var asyncOp = Addressables.LoadSceneAsync(_singleSceneReference);
-            OnLoadProgress?.Invoke(0);
             var task = asyncOp.Task;
             while (!task.IsCompleted)
             {
                 await Task.Yield();
                 if(!task.IsCompleted)
-                    OnLoadProgress?.Invoke(asyncOp.PercentComplete);
+                    OnLoadProgress?.Invoke(asyncOp.PercentComplete/totalProgress);
             }
-            OnLoadProgress?.Invoke(1);
+            OnLoadProgress?.Invoke(1f/totalProgress);
+            totalProgress--;
         }
         
         if (_sceneReferences != null)
         {
-            OnLoadProgress?.Invoke(0);
+            //OnLoadProgress?.Invoke(0);
             for (var index = 0; index < _sceneReferences.Length; index++)
             {
                 Debug.Log($"{this} Loading SceneAsync {index+1}/{_sceneReferences.Length} ");
                 _sceneInstances[index] = await Addressables.LoadSceneAsync(_sceneReferences[index], LoadSceneMode.Additive).Task;
-                OnLoadProgress?.Invoke((float)index / _sceneReferences.Length);
+                OnLoadProgress?.Invoke(((float)index / totalProgress));
             }
         }
+        OnLoadProgress?.Invoke(1);
         await Task.Yield();
 
         /*
