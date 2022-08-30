@@ -62,7 +62,7 @@ public abstract class AsyncState
         }
     }
     
-    protected AsyncState(AssetReference sceneReference,AssetReference[] sceneReferences) : this()
+    protected AsyncState(AssetReference sceneReference, params AssetReference[] sceneReferences) : this()
     {
         _singleSceneReference = sceneReference;
         _sceneReferences = sceneReferences;
