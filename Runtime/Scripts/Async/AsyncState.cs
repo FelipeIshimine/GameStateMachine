@@ -15,18 +15,18 @@ public abstract class AsyncState
 
     public AsyncState Root { get; private set; } = null;
 
-    private AsyncState _parent = null;
+    private AsyncState _parent;
     
-    private AsyncState _current;
-    protected AsyncState Current => _current;
+    [ShowInInspector] private AsyncState _subState;
+    protected AsyncState SubState => _subState;
 
     protected InnerState State;
 
-    public bool IsBusy => _current is { IsBusy: true } || 
+    public bool IsBusy => _subState is { IsBusy: true } || 
                           State == InnerState.Entering ||
                           State == InnerState.Exiting;
 
-    public bool IsReady => _current is { IsBusy: false } &&
+    public bool IsReady => _subState is { IsBusy: false } &&
                            State == InnerState.Active;
 
     private readonly AssetReference _singleSceneReference;
@@ -86,24 +86,24 @@ public abstract class AsyncState
 
     protected async Task SwitchStateAsync(AsyncState nState)
     {
-        AsyncState oldState = _current;
-        if (_current != null)
-            Debug.Log($"<color=green>{this}</color>: <color=red>{_current}</color> => <color=white>{nState}</color>");
+        AsyncState oldState = _subState;
+        if (_subState != null)
+            Debug.Log($"<color=green>{this}</color>: <color=red>{_subState}</color> => <color=white>{nState}</color>");
 
-        if (_current != null)
+        if (_subState != null)
         {
-            _current.State = InnerState.Exiting;
-            _current.BaseExit();
-            _current.Exit();
-            await _current.UnloadAdditiveScenesAsync();
-            _current.State = InnerState.Finished;
+            _subState.State = InnerState.Exiting;
+            await _subState.SubStateExit();
+            await _subState.Exit();
+            await _subState.UnloadAdditiveScenesAsync();
+            _subState.State = InnerState.Finished;
         }
 
-        _current = nState;
-        if (_current != null)
-            await EnterStateAsync(_current);
+        _subState = nState;
+        if (_subState != null)
+            await EnterStateAsync(_subState);
 
-        OnSwitchState?.Invoke(oldState,_current);
+        OnSwitchState?.Invoke(oldState,_subState);
         OnAnySwitchState?.Invoke(Root);
     }
 
@@ -116,7 +116,8 @@ public abstract class AsyncState
         await state.LoadScenesAsync();
         if(!(state is NullState))
             state.GoToNull();
-        state.Enter();
+        
+        await state.Enter();
         state.State = InnerState.Active;
     }
 
@@ -131,25 +132,23 @@ public abstract class AsyncState
     private async void RootInit() => await InitializeAsRootAsync();
 
 
-    private void BaseExit()
+    private async Task SubStateExit()
     {
-        if (_current != null)
-        {
-            _current.BaseExit();
-            _current.Exit();
-        }
+        if (_subState == null) return;
+        await _subState.SubStateExit();
+        await _subState.Exit();
     }
 
-    
-    /// <summary>
-    /// DO NOT call outside of AsyncStateMachine class
-    /// </summary>
-    protected abstract void Enter();
 
     /// <summary>
     /// DO NOT call outside of AsyncStateMachine class
     /// </summary>
-    protected abstract void Exit();
+    protected virtual Task Enter() => Task.CompletedTask;
+
+    /// <summary>
+    /// DO NOT call outside of AsyncStateMachine class
+    /// </summary>
+    protected virtual Task Exit() => Task.CompletedTask;
 
     private async Task LoadScenesAsync()
     {
@@ -217,7 +216,7 @@ public abstract class AsyncState
     private void GetStates(ref Stack<AsyncState> stack)
     {
         stack.Push(this);
-        _current?.GetStates(ref stack);
+        _subState?.GetStates(ref stack);
     }
 
     [Button] protected void GoToNull() => SwitchState(new NullState());

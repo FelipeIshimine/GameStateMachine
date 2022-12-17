@@ -1,5 +1,7 @@
-﻿public class NullState : AsyncState
+﻿using System.Threading.Tasks;
+
+public class NullState : AsyncState
 {
-    protected override void Enter() { }
-    protected override void Exit() { }
+    protected override Task Enter() => Task.CompletedTask;
+    protected override Task Exit() => Task.CompletedTask;
 }
