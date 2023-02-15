@@ -170,7 +170,6 @@ public abstract class AsyncState
 
     private async Task LoadScenesAsync()
     {
-        Time.timeScale = 0;
         int totalProgress = 0;
 
         if (_singleSceneReference != null) totalProgress++;
@@ -179,6 +178,7 @@ public abstract class AsyncState
         OnLoadProgress?.Invoke(0);
         if (_singleSceneReference != null)
         {
+            Time.timeScale = 0;
             Debug.Log($"{this} Loading Single Scene Async");
             var asyncOp = Addressables.LoadSceneAsync(_singleSceneReference);
             var task = asyncOp.Task;
@@ -190,10 +190,12 @@ public abstract class AsyncState
             }
             OnLoadProgress?.Invoke(1f/totalProgress);
             totalProgress--;
+            Time.timeScale = 1;
         }
         
         if (_sceneReferences != null)
         {
+            Time.timeScale = 0;
             //OnLoadProgress?.Invoke(0);
             for (var index = 0; index < _sceneReferences.Length; index++)
             {
@@ -201,16 +203,10 @@ public abstract class AsyncState
                 _sceneInstances[index] = await Addressables.LoadSceneAsync(_sceneReferences[index], LoadSceneMode.Additive).Task;
                 OnLoadProgress?.Invoke(((float)index / totalProgress));
             }
+            Time.timeScale = 1;
         }
         OnLoadProgress?.Invoke(1);
         await Task.Yield();
-
-        /*
-        var op = Resources.UnloadUnusedAssets();
-        while (!op.isDone)
-            await Task.Yield();
-        */
-        Time.timeScale = 1;
     }
 
     private async Task UnloadAdditiveScenesAsync()
