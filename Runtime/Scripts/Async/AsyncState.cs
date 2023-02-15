@@ -170,6 +170,7 @@ public abstract class AsyncState
 
     private async Task LoadScenesAsync()
     {
+        Time.timeScale = 0;
         int totalProgress = 0;
 
         if (_singleSceneReference != null) totalProgress++;
@@ -209,6 +210,7 @@ public abstract class AsyncState
         while (!op.isDone)
             await Task.Yield();
         */
+        Time.timeScale = 1;
     }
 
     private async Task UnloadAdditiveScenesAsync()
