@@ -93,7 +93,7 @@ public abstract class AsyncState
         if (_subState != null)
         {
             _subState.State = InnerState.Exiting;
-            await _subState.SubStateExit();
+            await _subState.SwitchStateAsync(null);
             await _subState.Exit();
             await _subState.UnloadAdditiveScenesAsync();
             _subState.State = InnerState.Finished;
@@ -129,15 +129,6 @@ public abstract class AsyncState
     public void InitializeAsRoot() => new Task(RootInit).RunSynchronously();
 
     private async void RootInit() => await InitializeAsRootAsync();
-
-
-    private async Task SubStateExit()
-    {
-        if (_subState == null) return;
-        await _subState.SubStateExit();
-        await _subState.Exit();
-    }
-
 
     /// <summary>
     /// DO NOT call outside of AsyncStateMachine class

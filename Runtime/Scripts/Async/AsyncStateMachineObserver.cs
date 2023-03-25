@@ -14,9 +14,10 @@ public static class AsyncStateMachineObserver
         AsyncState.OnAnySwitchState += OnAnySwitchState;
     }
 
-    private static void OnAnySwitchState(AsyncState root)
+    private static void OnAnySwitchState(AsyncState state)
     {
-        ActiveStateMachines[root] = root.GetStates();
+        if(state == null) return;
+        ActiveStateMachines[state] = state.GetStates();
         OnUpdate?.Invoke();
     }
 }
