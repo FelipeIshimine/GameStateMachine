@@ -109,17 +109,7 @@ public abstract class AsyncState
 
         _subState = nState;
         if (_subState != null)
-        {
-            try
-            {
-                await EnterStateAsync(_subState);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e);
-                throw;
-            }
-        }
+            await EnterStateAsync(_subState);
 
         OnSwitchState?.Invoke(oldState,_subState);
         OnAnySwitchState?.Invoke(Root);
