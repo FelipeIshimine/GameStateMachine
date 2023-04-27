@@ -93,17 +93,9 @@ public abstract class AsyncState
         if (_subState != null)
         {
             _subState.State = InnerState.Exiting;
-            try
-            {
-                await _subState.SubStateExit();
-                await _subState.Exit();
-                await _subState.UnloadAdditiveScenesAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e);
-                throw;
-            }
+            await _subState.SubStateExit();
+            await _subState.Exit();
+            await _subState.UnloadAdditiveScenesAsync();
             _subState.State = InnerState.Finished;
         }
 
