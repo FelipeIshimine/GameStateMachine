@@ -11,7 +11,10 @@ public abstract class AsyncState
 {
     public static event Action<AsyncState> OnAnySwitchState;
     public event Action<AsyncState,AsyncState> OnSwitchState;
-    public static event Action<float> OnLoadProgress;
+
+    public event Action<float> OnLoadProgress;
+
+    public float SceneLoadProgress { get; set; }
 
     public AsyncState Root { get; private set; } = null;
 
@@ -142,15 +145,16 @@ public abstract class AsyncState
 
     private async Task LoadScenesAsync()
     {
+        float oldTimeScale = Time.timeScale;
+        Time.timeScale = 0;
         int totalProgress = 0;
 
         if (_singleSceneReference != null) totalProgress++;
         if (_sceneReferences != null) totalProgress += _sceneReferences.Length;
-        
-        OnLoadProgress?.Invoke(0);
+
+        UpdateSceneLoadProgress(0);
         if (_singleSceneReference != null)
         {
-            Time.timeScale = 0;
             Debug.Log($"{this} Loading Single Scene Async");
             var asyncOp = Addressables.LoadSceneAsync(_singleSceneReference);
             var task = asyncOp.Task;
@@ -158,27 +162,33 @@ public abstract class AsyncState
             {
                 await Task.Yield();
                 if(!task.IsCompleted)
-                    OnLoadProgress?.Invoke(asyncOp.PercentComplete/totalProgress);
+                    UpdateSceneLoadProgress(asyncOp.PercentComplete/totalProgress);
             }
-            OnLoadProgress?.Invoke(1f/totalProgress);
+            UpdateSceneLoadProgress(1f/totalProgress);
             totalProgress--;
-            Time.timeScale = 1;
         }
         
         if (_sceneReferences != null)
         {
-            Time.timeScale = 0;
-            //OnLoadProgress?.Invoke(0);
+            //UpdateSceneLoadProgress(0);
             for (var index = 0; index < _sceneReferences.Length; index++)
             {
-                Debug.Log($"{this} Loading SceneAsync {index+1}/{_sceneReferences.Length} ");
+                UpdateSceneLoadProgress(((index+.5f) / totalProgress));
+                Debug.Log($"{this} Loading SceneAsync {index+.5f}/{_sceneReferences.Length} ");
                 _sceneInstances[index] = await Addressables.LoadSceneAsync(_sceneReferences[index], LoadSceneMode.Additive).Task;
-                OnLoadProgress?.Invoke(((float)index / totalProgress));
+                Debug.Log($"{this} Loading SceneAsync {index+1}/{_sceneReferences.Length} ");
+                UpdateSceneLoadProgress(((float)index / totalProgress));
             }
-            Time.timeScale = 1;
         }
-        OnLoadProgress?.Invoke(1);
+        Time.timeScale = oldTimeScale;
+        UpdateSceneLoadProgress(1);
         await Task.Yield();
+    }
+
+    private void UpdateSceneLoadProgress(float value)
+    {
+        SceneLoadProgress = value;
+        OnLoadProgress?.Invoke(value);
     }
 
     private async Task UnloadAdditiveScenesAsync()
