@@ -189,7 +189,7 @@ public abstract class AsyncState
             {
                 Debug.Log($"{this} Unloading SceneAsync {index + 1}/{_sceneReferences.Length} ");
                 
-                await Addressables.UnloadSceneAsync(_sceneInstances[index], false).Task;
+                await Addressables.UnloadSceneAsync(_sceneInstances[index]).Task;
             }
         }
     }
