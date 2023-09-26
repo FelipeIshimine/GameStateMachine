@@ -36,6 +36,7 @@ public abstract class AsyncState
 
     private readonly AssetReference[] _sceneReferences = null;
     private readonly SceneInstance[] _sceneInstances = null;
+    public SceneInstance[] SceneInstances => _sceneInstances;
 
     protected AsyncState() 
     {
