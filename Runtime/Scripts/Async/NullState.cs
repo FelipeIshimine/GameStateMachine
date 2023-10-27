@@ -1,7 +1,8 @@
 ﻿using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 public class NullState : AsyncState
 {
-    protected override Task Enter() => Task.CompletedTask;
-    protected override Task Exit() => Task.CompletedTask;
+    protected override UniTask Enter() => UniTask.CompletedTask;
+    protected override UniTask Exit() => UniTask.CompletedTask;
 }

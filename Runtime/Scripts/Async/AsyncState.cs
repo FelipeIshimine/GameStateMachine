@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -18,25 +19,25 @@ public abstract class AsyncState
 
     public AsyncState Root { get; private set; } = null;
 
-    private AsyncState _parent;
+    private AsyncState parent;
     
-    [ShowInInspector] private AsyncState _subState;
-    protected AsyncState SubState => _subState;
+    [ShowInInspector] private AsyncState subState;
+    protected AsyncState SubState => subState;
 
     protected InnerState State;
 
-    public bool IsBusy => _subState is { IsBusy: true } || 
+    public bool IsBusy => subState is { IsBusy: true } || 
                           State == InnerState.Entering ||
                           State == InnerState.Exiting;
 
-    public bool IsReady => _subState is { IsBusy: false } &&
+    public bool IsReady => subState is { IsBusy: false } &&
                            State == InnerState.Active;
 
-    private readonly AssetReference _singleSceneReference;
+    private readonly AssetReference singleSceneReference;
 
-    private readonly AssetReference[] _sceneReferences = null;
-    private readonly SceneInstance[] _sceneInstances = null;
-    public SceneInstance[] SceneInstances => _sceneInstances;
+    private readonly AssetReference[] sceneReferences = null;
+    private readonly SceneInstance[] sceneInstances = null;
+    public SceneInstance[] SceneInstances => sceneInstances;
 
     protected AsyncState() 
     {
@@ -45,8 +46,8 @@ public abstract class AsyncState
 
     protected AsyncState(AssetReference[] sceneReferences) : this()
     {
-        _sceneReferences = sceneReferences;
-        _sceneInstances = new SceneInstance[sceneReferences?.Length ?? 0];
+        this.sceneReferences = sceneReferences;
+        sceneInstances = new SceneInstance[sceneReferences?.Length ?? 0];
     }
 
     protected AsyncState(AssetReference sceneReference, LoadSceneMode loadSceneMode) : this()
@@ -54,12 +55,12 @@ public abstract class AsyncState
         switch (loadSceneMode)
         {
             case LoadSceneMode.Single:
-                _singleSceneReference = sceneReference;
-                _sceneInstances = Array.Empty<SceneInstance>();
+                singleSceneReference = sceneReference;
+                sceneInstances = Array.Empty<SceneInstance>();
                 break;
             case LoadSceneMode.Additive:
-                _sceneReferences = new []{sceneReference};
-                _sceneInstances = new SceneInstance[1];
+                sceneReferences = new []{sceneReference};
+                sceneInstances = new SceneInstance[1];
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(loadSceneMode), loadSceneMode, null);
@@ -68,9 +69,9 @@ public abstract class AsyncState
     
     protected AsyncState(AssetReference sceneReference, params AssetReference[] sceneReferences) : this()
     {
-        _singleSceneReference = sceneReference;
-        _sceneReferences = sceneReferences;
-        _sceneInstances = new SceneInstance[sceneReferences.Length];
+        singleSceneReference = sceneReference;
+        this.sceneReferences = sceneReferences;
+        sceneInstances = new SceneInstance[sceneReferences.Length];
     }
 
     protected enum InnerState
@@ -88,33 +89,33 @@ public abstract class AsyncState
         new Task(Action).RunSynchronously();
     }
 
-    protected async Task SwitchStateAsync(AsyncState nState)
+    protected async UniTask SwitchStateAsync(AsyncState nState)
     {
-        AsyncState oldState = _subState;
-        if (_subState != null)
-            Debug.Log($"<color=green>{this}</color>: <color=red>{_subState}</color> => <color=white>{nState}</color>");
+        AsyncState oldState = subState;
+        if (subState != null)
+            Debug.Log($"<color=green>{this}</color>: <color=red>{subState}</color> => <color=white>{nState}</color>");
 
-        if (_subState != null)
+        if (subState != null)
         {
-            _subState.State = InnerState.Exiting;
-            await _subState.SwitchStateAsync(null);
-            await _subState.Exit();
-            await _subState.UnloadAdditiveScenesAsync();
-            _subState.State = InnerState.Finished;
+            subState.State = InnerState.Exiting;
+            await subState.SwitchStateAsync(null);
+            await subState.Exit();
+            await subState.UnloadAdditiveScenesAsync();
+            subState.State = InnerState.Finished;
         }
-        _subState = nState;
-        if (_subState != null)
-            await EnterStateAsync(_subState);
+        subState = nState;
+        if (subState != null)
+            await EnterStateAsync(subState);
 
-        OnSwitchState?.Invoke(oldState,_subState);
+        OnSwitchState?.Invoke(oldState,subState);
         OnAnySwitchState?.Invoke(Root);
     }
 
-    private async Task EnterStateAsync(AsyncState state)
+    private async UniTask EnterStateAsync(AsyncState state)
     {
         await Task.Yield();
         state.State = InnerState.Entering;
-        state._parent = this;
+        state.parent = this;
         state.Root = Root;
         await state.LoadScenesAsync();
         if(!(state is NullState))
@@ -124,44 +125,42 @@ public abstract class AsyncState
         state.State = InnerState.Active;
     }
 
-    public async Task InitializeAsRootAsync()
+    public UniTask InitializeAsRootAsync()
     {
         Root = this;
-        await EnterStateAsync(this);
+        return EnterStateAsync(this);
     }
     
-    public void InitializeAsRoot() => new Task(RootInit).RunSynchronously();
-
-    private async void RootInit() => await InitializeAsRootAsync();
+    //public void InitializeAsRoot() => InitializeAsRootAsync().AsTask().RunSynchronously();
 
     /// <summary>
     /// DO NOT call outside of AsyncStateMachine class
     /// </summary>
-    protected virtual Task Enter() => Task.CompletedTask;
+    protected virtual UniTask Enter() => UniTask.CompletedTask;
 
     /// <summary>
     /// DO NOT call outside of AsyncStateMachine class
     /// </summary>
-    protected virtual Task Exit() => Task.CompletedTask;
+    protected virtual UniTask Exit() => UniTask.CompletedTask;
 
-    private async Task LoadScenesAsync()
+    private async UniTask LoadScenesAsync()
     {
         float oldTimeScale = Time.timeScale;
         Time.timeScale = 0;
         int totalProgress = 0;
 
-        if (_singleSceneReference != null) totalProgress++;
-        if (_sceneReferences != null) totalProgress += _sceneReferences.Length;
+        if (singleSceneReference != null) totalProgress++;
+        if (sceneReferences != null) totalProgress += sceneReferences.Length;
 
         UpdateSceneLoadProgress(0);
-        if (_singleSceneReference != null)
+        if (singleSceneReference != null)
         {
             Debug.Log($"{this} Loading Single Scene Async");
-            var asyncOp = Addressables.LoadSceneAsync(_singleSceneReference);
+            var asyncOp = Addressables.LoadSceneAsync(singleSceneReference);
             var task = asyncOp.Task;
             while (!task.IsCompleted)
             {
-                await Task.Yield();
+                await UniTask.NextFrame();
                 if(!task.IsCompleted)
                     UpdateSceneLoadProgress(asyncOp.PercentComplete/totalProgress);
             }
@@ -169,21 +168,21 @@ public abstract class AsyncState
             totalProgress--;
         }
         
-        if (_sceneReferences != null)
+        if (sceneReferences != null)
         {
             //UpdateSceneLoadProgress(0);
-            for (var index = 0; index < _sceneReferences.Length; index++)
+            for (var index = 0; index < sceneReferences.Length; index++)
             {
                 UpdateSceneLoadProgress(((index+.5f) / totalProgress));
-                Debug.Log($"{this} Loading SceneAsync {index+.5f}/{_sceneReferences.Length} ");
-                _sceneInstances[index] = await Addressables.LoadSceneAsync(_sceneReferences[index], LoadSceneMode.Additive).Task;
-                Debug.Log($"{this} Loading SceneAsync {index+1}/{_sceneReferences.Length} ");
+                Debug.Log($"{this} Loading SceneAsync {index+.5f}/{sceneReferences.Length} ");
+                sceneInstances[index] = await Addressables.LoadSceneAsync(sceneReferences[index], LoadSceneMode.Additive).Task;
+                Debug.Log($"{this} Loading SceneAsync {index+1}/{sceneReferences.Length} ");
                 UpdateSceneLoadProgress(((float)index / totalProgress));
             }
         }
         Time.timeScale = oldTimeScale;
         UpdateSceneLoadProgress(1);
-        await Task.Yield();
+        await UniTask.NextFrame();
     }
 
     private void UpdateSceneLoadProgress(float value)
@@ -194,13 +193,12 @@ public abstract class AsyncState
 
     private async Task UnloadAdditiveScenesAsync()
     {
-        if (_sceneReferences != null)
+        if (sceneReferences != null)
         {
-            for (var index = 0; index < _sceneInstances.Length; index++)
+            for (var index = 0; index < sceneInstances.Length; index++)
             {
-                Debug.Log($"{this} Unloading SceneAsync {index + 1}/{_sceneReferences.Length} ");
-                
-                await Addressables.UnloadSceneAsync(_sceneInstances[index]).Task;
+                Debug.Log($"{this} Unloading SceneAsync {index + 1}/{sceneReferences.Length} ");
+                await Addressables.UnloadSceneAsync(sceneInstances[index]).Task;
             }
         }
     }
@@ -215,7 +213,7 @@ public abstract class AsyncState
     private void GetStates(ref Stack<AsyncState> stack)
     {
         stack.Push(this);
-        _subState?.GetStates(ref stack);
+        subState?.GetStates(ref stack);
     }
 
     [Button] protected void GoToNull() => SwitchState(new NullState());
